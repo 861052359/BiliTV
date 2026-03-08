@@ -121,4 +121,4 @@ flutter build apk --target-platform android-arm64
 
 ## 📄 许可证
 
-MIT License
+GPLV3 License
