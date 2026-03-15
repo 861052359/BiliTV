@@ -30,6 +30,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-flutter-
 
+      - name: Cache Android SDK
+        uses: actions/cache@v3
+        with:
+          path: /usr/local/lib/android/sdk
+          key: ${{ runner.os }}-android-sdk-${{ hashFiles('**/pubspec.lock') }}
+
       - name: Get dependencies
         run: flutter pub get
 
