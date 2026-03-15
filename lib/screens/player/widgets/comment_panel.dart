@@ -63,9 +63,9 @@ class _CommentPanelState extends State<CommentPanel> {
       widget.onClose?.call();
       return KeyEventResult.handled;
     }
-    if (event.logicalKey == LogicalKeyboardKey.back || 
-        event.logicalKey == LogicalKeyboardKey.escape ||
-        event.logicalKey == LogicalKeyboardKey.goBack) {
+    if (event.logicalKey == LogicalKeyboardKey.escape ||
+        event.logicalKey == LogicalKeyboardKey.goBack ||
+        event.logicalKey == LogicalKeyboardKey.browserBack) {
       widget.onClose?.call();
       return KeyEventResult.handled;
     }
@@ -205,9 +205,9 @@ class _CommentPanelState extends State<CommentPanel> {
                     ),
                   ),
                   IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white70),
-                  onPressed: () => widget.onClose?.call(),
-                ),
+                    icon: const Icon(Icons.close, color: Colors.white70),
+                    onPressed: () => widget.onClose?.call(),
+                  ),
               ],
             ),
           ),
