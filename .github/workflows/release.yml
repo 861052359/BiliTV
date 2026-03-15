@@ -17,17 +17,6 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.41.4'
-          channel: 'stable'
-
-      - name: Cache Flutter
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.pub-cache
-            ~/.gradle
-          key: ${{ runner.os }}-flutter-3.41.4-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-flutter-3.41.4-
 
       - name: Get dependencies
         run: flutter pub get
@@ -38,20 +27,10 @@ jobs:
       - name: Rename armv7a APK
         run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/app-armeabi-v7a.apk
 
-      # - name: Build APK (arm64-v8a)
-      #   run: flutter build apk --release --target-platform android-arm64
-
-      # - name: Rename arm64 APK
-      #   run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/app-arm64-v8a.apk
-
-      - name: List outputs
-        run: ls -la build/app/outputs/flutter-apk/
-
       - name: Upload APKs
         uses: softprops/action-gh-release@v1
         with:
           files: build/app/outputs/flutter-apk/app-armeabi-v7a.apk
           draft: true
-          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
