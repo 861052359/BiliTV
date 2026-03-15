@@ -30,8 +30,8 @@ class _CommentPanelState extends State<CommentPanel> {
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
   int _focusedIndex = -1;
-  dynamic _selectedComment;
-  List<dynamic> _replies = [];
+  int? _expandedCommentIndex;
+  List<dynamic> _expandedReplies = [];
   bool _isLoadingReplies = false;
 
   @override
@@ -51,46 +51,81 @@ class _CommentPanelState extends State<CommentPanel> {
     super.dispose();
   }
 
+  int get _totalItems {
+    int total = _comments.length;
+    if (_expandedCommentIndex != null && _expandedCommentIndex! < _comments.length) {
+      total += _expandedReplies.length;
+    }
+    return total;
+  }
+
   KeyEventResult _handleKeyEvent(KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
 
+    final isInReplies = _expandedCommentIndex != null && 
+                        _focusedIndex > _comments.length - 1;
+
     if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-      if (_focusedIndex >= _comments.length - 1 && _hasMore && !_isLoading) {
+      if (_focusedIndex < _totalItems - 1) {
+        _focusedIndex++;
+        // 如果展开的评论有回复，自动跳转到回复区域
+        if (_expandedCommentIndex != null && _focusedIndex == _comments.length) {
+          _focusedIndex = _comments.length;
+        }
+      } else if (_focusedIndex == _totalItems - 1 && _hasMore && !_isLoading) {
         _loadMore();
-        _focusedIndex = _comments.length - 1;
-      } else {
-        _focusedIndex = (_focusedIndex + 1).clamp(0, _comments.length - 1);
       }
       _scrollToFocusedItem();
       return KeyEventResult.handled;
     }
+    
     if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-      _focusedIndex = (_focusedIndex - 1).clamp(0, _comments.length - 1);
+      if (_focusedIndex > 0) {
+        _focusedIndex--;
+        // 如果退出回复区域，关闭展开
+        if (_expandedCommentIndex != null && _focusedIndex < _comments.length) {
+          setState(() {
+            _expandedCommentIndex = null;
+            _expandedReplies = [];
+          });
+        }
+      }
       _scrollToFocusedItem();
       return KeyEventResult.handled;
     }
+    
     if (event.logicalKey == LogicalKeyboardKey.select ||
         event.logicalKey == LogicalKeyboardKey.enter) {
-      if (_focusedIndex >= 0 && _focusedIndex < _comments.length) {
+      if (_focusedIndex < _comments.length) {
         final comment = _comments[_focusedIndex];
         final rcount = comment['rcount'] as int? ?? 0;
         if (rcount > 0) {
-          _showReplies(comment);
+          if (_expandedCommentIndex == _focusedIndex) {
+            setState(() {
+              _expandedCommentIndex = null;
+              _expandedReplies = [];
+            });
+          } else {
+            _showReplies(comment, _focusedIndex);
+          }
         }
       }
       return KeyEventResult.handled;
     }
+    
     if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-      if (_selectedComment != null) {
+      if (_expandedCommentIndex != null) {
         setState(() {
-          _selectedComment = null;
-          _replies = [];
+          _expandedCommentIndex = null;
+          _expandedReplies = [];
+          _focusedIndex = _expandedCommentIndex!;
         });
       } else {
         widget.onClose?.call();
       }
       return KeyEventResult.handled;
     }
+    
     if (event.logicalKey == LogicalKeyboardKey.escape ||
         event.logicalKey == LogicalKeyboardKey.goBack ||
         event.logicalKey == LogicalKeyboardKey.browserBack) {
@@ -100,11 +135,12 @@ class _CommentPanelState extends State<CommentPanel> {
     return KeyEventResult.ignored;
   }
 
-  void _showReplies(dynamic comment) async {
+  void _showReplies(dynamic comment, int commentIndex) async {
     setState(() {
-      _selectedComment = comment;
-      _replies = [];
+      _expandedCommentIndex = commentIndex;
+      _expandedReplies = [];
       _isLoadingReplies = true;
+      _focusedIndex = _comments.length;
     });
 
     final rpid = comment['rpid'];
@@ -120,7 +156,7 @@ class _CommentPanelState extends State<CommentPanel> {
           final replies = json['data']['replies'] as List? ?? [];
           if (mounted) {
             setState(() {
-              _replies = replies;
+              _expandedReplies = replies;
               _isLoadingReplies = false;
             });
           }
@@ -136,16 +172,31 @@ class _CommentPanelState extends State<CommentPanel> {
   }
 
   void _scrollToFocusedItem() {
-    if (_focusedIndex >= 0 && _focusedIndex < _comments.length) {
-      final itemHeight = 120.0;
-      final targetOffset = _focusedIndex * itemHeight - 200;
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          targetOffset.clamp(0, _scrollController.position.maxScrollExtent),
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeOut,
-        );
+    if (_focusedIndex < 0) return;
+    
+    final commentHeight = 140.0;
+    final replyHeight = 70.0;
+    
+    double targetOffset = 0;
+    if (_focusedIndex < _comments.length) {
+      targetOffset = _focusedIndex * commentHeight - 200;
+      if (_expandedCommentIndex != null && _expandedCommentIndex! < _focusedIndex) {
+        targetOffset += _expandedReplies.length * replyHeight;
       }
+    } else if (_expandedCommentIndex != null) {
+      final replyIndex = _focusedIndex - _comments.length;
+      targetOffset = _comments.length * commentHeight + replyIndex * replyHeight - 200;
+      if (_expandedCommentIndex! < _comments.length) {
+        targetOffset += _expandedReplies.length * replyHeight;
+      }
+    }
+    
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        targetOffset.clamp(0, _scrollController.position.maxScrollExtent),
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
+      );
     }
   }
 
@@ -243,76 +294,57 @@ class _CommentPanelState extends State<CommentPanel> {
       onKeyEvent: (node, event) => _handleKeyEvent(event),
       child: Container(
         color: const Color(0xFF1E1E1E),
-        child: Row(
+        child: Column(
           children: [
-            Expanded(
-              child: Column(
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2D2D2D),
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.1),
+                  ),
+                ),
+              ),
+              child: Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2D2D2D),
-                      border: Border(
-                        bottom: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.1),
-                        ),
+                  Expanded(
+                    child: Text(
+                      _expandedCommentIndex != null ? '回复' : '评论',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            _selectedComment != null ? '回复' : '评论',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        if (_selectedComment != null)
-                          IconButton(
-                            icon: const Icon(Icons.arrow_back, color: Colors.white70),
-                            onPressed: () {
-                              setState(() {
-                                _selectedComment = null;
-                                _replies = [];
-                              });
-                            },
-                          ),
-                      ],
+                  ),
+                  if (_expandedCommentIndex != null)
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white70),
+                      onPressed: () {
+                        setState(() {
+                          _expandedCommentIndex = null;
+                          _expandedReplies = [];
+                          _focusedIndex = _expandedCommentIndex!;
+                        });
+                      },
                     ),
-                  ),
-                  Expanded(
-                    child: _error != null
-                        ? _buildError()
-                        : _comments.isEmpty && _isLoading
-                            ? _buildLoading()
-                            : _buildCommentList(),
-                  ),
                 ],
               ),
             ),
-            if (_selectedComment != null)
-              Container(
-                width: 350,
-                color: const Color(0xFF252525),
-                child: _buildRepliesPanel(),
-              ),
+            Expanded(
+              child: _error != null
+                  ? _buildError()
+                  : _comments.isEmpty && _isLoading
+                      ? _buildLoading()
+                      : _buildCommentList(),
+            ),
           ],
         ),
       ),
     );
   }
-
-  Widget _buildRepliesPanel() {
-    if (_isLoadingReplies) {
-      return const Center(
-        child: CircularProgressIndicator(
-          color: Color(0xFFfb7299),
-        ),
-      );
-    }
+}
 
     if (_replies.isEmpty) {
       return Center(
@@ -425,13 +457,118 @@ class _CommentPanelState extends State<CommentPanel> {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: _comments.length + (_hasMore ? 1 : 0),
       itemBuilder: (context, index) {
-        if (index == _comments.length) {
+        if (index < _comments.length) {
+          final comment = _comments[index];
+          final isExpanded = _expandedCommentIndex == index;
+          
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildCommentItem(comment, index),
+              if (isExpanded) _buildExpandedReplies(),
+            ],
+          );
+        } else if (index == _comments.length && _hasMore) {
           return _buildLoadMoreIndicator();
         }
-        return _buildCommentItem(_comments[index], index);
+        return const SizedBox.shrink();
       },
+    );
+  }
+
+  Widget _buildExpandedReplies() {
+    if (_isLoadingReplies) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        child: const Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFFfb7299),
+            strokeWidth: 2,
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(left: 32, right: 16, bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF252525),
+        borderRadius: BorderRadius.circular(8),
+        border: Border(
+          left: BorderSide(
+            color: const Color(0xFFfb7299).withValues(alpha: 0.5),
+            width: 3,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ..._expandedReplies.map((reply) => _buildReplyItem(reply)),
+          if (_expandedCommentIndex != null) 
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                '按确认键收起',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.4),
+                  fontSize: 12,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReplyItem(dynamic reply) {
+    final replyMember = reply['member'] as Map<String, dynamic>? ?? {};
+    final replyContent = reply['content'] as Map<String, dynamic>? ?? {};
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: CachedNetworkImage(
+              imageUrl: replyMember['avatar'] ?? '',
+              width: 24,
+              height: 24,
+              errorWidget: (_, __, ___) => Container(
+                width: 24,
+                height: 24,
+                color: Colors.grey[800],
+                child: const Icon(Icons.person, color: Colors.white54, size: 14),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  replyMember['uname'] ?? '',
+                  style: const TextStyle(
+                    color: Color(0xFFfb7299),
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  replyContent['message'] ?? '',
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -463,8 +600,8 @@ class _CommentPanelState extends State<CommentPanel> {
     final member = comment['member'] as Map<String, dynamic>? ?? {};
     final content = comment['content'] as Map<String, dynamic>? ?? {};
     final rcount = comment['rcount'] as int? ?? 0;
-    final rcountText = rcount > 0 ? ' $rcount 条回复' : '';
     final isFocused = _focusedIndex == index;
+    final isExpanded = _expandedCommentIndex == index;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -476,7 +613,9 @@ class _CommentPanelState extends State<CommentPanel> {
         borderRadius: BorderRadius.circular(8),
         border: isFocused 
             ? Border.all(color: const Color(0xFFfb7299), width: 2)
-            : null,
+            : isExpanded
+                ? Border.all(color: const Color(0xFFfb7299).withValues(alpha: 0.5), width: 1)
+                : null,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -534,20 +673,22 @@ class _CommentPanelState extends State<CommentPanel> {
                     height: 1.4,
                   ),
                 ),
-                if (rcountText.isNotEmpty) ...[
+                if (rcount > 0) ...[
                   const SizedBox(height: 8),
                   Row(
                     children: [
                       Icon(
-                        Icons.subdirectory_arrow_right,
+                        isExpanded ? Icons.expand_less : Icons.subdirectory_arrow_right,
                         size: 14,
-                        color: isFocused 
+                        color: isFocused || isExpanded
                             ? const Color(0xFFfb7299)
                             : Colors.white.withValues(alpha: 0.4),
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '查看$rcountText 按确认键',
+                        isExpanded 
+                            ? '收起回复' 
+                            : '查看 $rcount 条回复',
                         style: TextStyle(
                           color: isFocused 
                               ? const Color(0xFFfb7299)

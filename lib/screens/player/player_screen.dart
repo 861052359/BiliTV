@@ -378,7 +378,7 @@ class _PlayerScreenState extends State<PlayerScreen>
                   top: 0,
                   right: 0,
                   bottom: 0,
-                  width: 700,
+                  width: 500,
                   child: Container(
                     color: const Color(0xFF1E1E1E),
                     child: CommentPanel(
