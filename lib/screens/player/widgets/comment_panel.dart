@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:http/http.dart' as http;
 import '../../../services/bilibili_api.dart';
 
 class CommentPanel extends StatefulWidget {
@@ -50,13 +52,29 @@ class _CommentPanelState extends State<CommentPanel> {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
 
     if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-      _focusedIndex = (_focusedIndex + 1).clamp(0, _comments.length - 1);
+      if (_focusedIndex >= _comments.length - 1 && _hasMore && !_isLoading) {
+        _loadMore();
+        _focusedIndex = _comments.length - 1;
+      } else {
+        _focusedIndex = (_focusedIndex + 1).clamp(0, _comments.length - 1);
+      }
       _scrollToFocusedItem();
       return KeyEventResult.handled;
     }
     if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
       _focusedIndex = (_focusedIndex - 1).clamp(0, _comments.length - 1);
       _scrollToFocusedItem();
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.select ||
+        event.logicalKey == LogicalKeyboardKey.enter) {
+      if (_focusedIndex >= 0 && _focusedIndex < _comments.length) {
+        final comment = _comments[_focusedIndex];
+        final rcount = comment['rcount'] as int? ?? 0;
+        if (rcount > 0) {
+          _showReplies(comment);
+        }
+      }
       return KeyEventResult.handled;
     }
     if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
@@ -70,6 +88,151 @@ class _CommentPanelState extends State<CommentPanel> {
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
+  }
+
+  void _showReplies(dynamic comment) async {
+    final rpid = comment['rpid'];
+    final oid = widget.oid;
+    
+    try {
+      final url = 'https://api.bilibili.com/x/v2/reply/reply?oid=$oid&type=1&root=$rpid&pn=1&ps=10';
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        if (json['code'] == 0 && json['data'] != null) {
+          final replies = json['data']['replies'] as List? ?? [];
+          if (replies.isNotEmpty && mounted) {
+            _showRepliesDialog(comment, replies);
+          }
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  void _showRepliesDialog(dynamic comment, List replies) {
+    final member = comment['member'] as Map<String, dynamic>? ?? {};
+    final content = comment['content'] as Map<String, dynamic>? ?? {};
+    
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        child: Container(
+          width: 500,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: CachedNetworkImage(
+                      imageUrl: member['avatar'] ?? '',
+                      width: 40,
+                      height: 40,
+                      errorWidget: (_, __, ___) => Container(
+                        width: 40,
+                        height: 40,
+                        color: Colors.grey[800],
+                        child: const Icon(Icons.person, color: Colors.white54),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      member['uname'] ?? '',
+                      style: const TextStyle(
+                        color: Color(0xFFfb7299),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white70),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                content['message'] ?? '',
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              const Divider(color: Colors.white24),
+              const SizedBox(height: 8),
+              const Text(
+                '全部回复',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: replies.length,
+                  itemBuilder: (context, index) {
+                    final reply = replies[index];
+                    final replyMember = reply['member'] as Map<String, dynamic>? ?? {};
+                    final replyContent = reply['content'] as Map<String, dynamic>? ?? {};
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(15),
+                            child: CachedNetworkImage(
+                              imageUrl: replyMember['avatar'] ?? '',
+                              width: 30,
+                              height: 30,
+                              errorWidget: (_, __, ___) => Container(
+                                width: 30,
+                                height: 30,
+                                color: Colors.grey[800],
+                                child: const Icon(Icons.person, color: Colors.white54, size: 18),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  replyMember['uname'] ?? '',
+                                  style: const TextStyle(
+                                    color: Color(0xFFfb7299),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  replyContent['message'] ?? '',
+                                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _scrollToFocusedItem() {
@@ -203,10 +366,6 @@ class _CommentPanelState extends State<CommentPanel> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white70),
-                    onPressed: () => widget.onClose?.call(),
                   ),
                 ],
               ),
@@ -383,11 +542,20 @@ class _CommentPanelState extends State<CommentPanel> {
                       Icon(
                         Icons.subdirectory_arrow_right,
                         size: 14,
-                        color: Colors.white.withValues(alpha: 0.4),
+                        color: isFocused 
+                            ? const Color(0xFFfb7299)
+                            : Colors.white.withValues(alpha: 0.4),
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '查看$rcountText',
+                        '查看$rcountText 按确认键',
+                        style: TextStyle(
+                          color: isFocused 
+                              ? const Color(0xFFfb7299)
+                              : Colors.white.withValues(alpha: 0.4),
+                          fontSize: 12,
+                          fontWeight: isFocused ? FontWeight.bold : FontWeight.normal,
+                        ),
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.4),
                           fontSize: 12,
