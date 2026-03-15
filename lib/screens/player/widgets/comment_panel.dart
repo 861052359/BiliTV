@@ -223,10 +223,9 @@ class _CommentPanelState extends State<CommentPanel> {
     if (!mounted) return;
 
     if (result['code'] == 0) {
-      final data = result['data'];
-      final replies = data['replies'] as List? ?? [];
-      final page = data['page'] as Map<String, dynamic>? ?? {};
-      final pageCount = page['count'] as int? ?? 0;
+      final replies = result['data'] as List? ?? [];
+      final page = result['page'] as Map<String, dynamic>? ?? {};
+      final pageCount = page['count'] as int? ?? replies.length;
 
       setState(() {
         _comments = replies;
@@ -252,9 +251,9 @@ class _CommentPanelState extends State<CommentPanel> {
     if (!mounted) return;
 
     if (result['code'] == 0) {
-      final replies = result['data']['replies'] as List? ?? [];
-      final page = result['data']['page'] as Map<String, dynamic>? ?? {};
-      final pageCount = page['count'] as int? ?? 0;
+      final replies = result['data'] as List? ?? [];
+      final page = result['page'] as Map<String, dynamic>? ?? {};
+      final pageCount = page['count'] as int? ?? replies.length;
 
       setState(() {
         _currentPage++;

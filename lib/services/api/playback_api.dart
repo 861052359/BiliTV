@@ -389,11 +389,11 @@ class PlaybackApi {
     required int oid,
     int pn = 1,
     int type = 1,
-    int sort = 2, // 2-按时间排序，0-按点赞数排序
+    int sort = 0, // 0-按热度排序，2-按时间排序
   }) async {
     try {
       final url =
-          'https://api.bilibili.com/x/v2/reply?type=$type&oid=$oid&pn=$pn&sort=$sort';
+          'https://api.bilibili.com/x/v2/reply?type=$type&oid=$oid&pn=$pn&ps=30&sort=$sort';
       final response = await http.get(
         Uri.parse(url),
         headers: BaseApi.getHeaders(),
@@ -402,10 +402,14 @@ class PlaybackApi {
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
         if (json['code'] == 0 && json['data'] != null) {
+          final data = json['data'];
+          final replies = data['replies'] as List? ?? [];
+          final topReplies = data['top_replies'] as List? ?? [];
+          final allReplies = [...topReplies, ...replies];
           return {
             'code': 0,
-            'data': json['data'],
-            'page': json['data']['page'] ?? {'num': pn, 'size': 20},
+            'data': allReplies,
+            'page': data['page'] ?? {'num': pn, 'size': 30, 'count': allReplies.length},
           };
         }
         return {'code': json['code'] ?? -1, 'message': json['message'] ?? '获取评论失败'};
