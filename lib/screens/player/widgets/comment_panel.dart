@@ -203,7 +203,7 @@ class _CommentPanelState extends State<CommentPanel> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                  },
+                  ),
                   IconButton(
                     icon: const Icon(Icons.close, color: Colors.white70),
                     onPressed: () => widget.onClose?.call(),
