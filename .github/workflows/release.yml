@@ -19,22 +19,15 @@ jobs:
           flutter-version: '3.41.4'
           channel: 'stable'
 
-      - name: Cache dependencies
+      - name: Cache Flutter
         uses: actions/cache@v3
         with:
           path: |
             ~/.pub-cache
-            ~/.gradle/caches
-            build/app/outputs/flutter-apk
-          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
+            ~/.gradle
+          key: ${{ runner.os }}-flutter-3.41.4-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
-            ${{ runner.os }}-flutter-
-
-      - name: Cache Android SDK
-        uses: actions/cache@v3
-        with:
-          path: /usr/local/lib/android/sdk
-          key: ${{ runner.os }}-android-sdk-${{ hashFiles('**/pubspec.lock') }}
+            ${{ runner.os }}-flutter-3.41.4-
 
       - name: Get dependencies
         run: flutter pub get
