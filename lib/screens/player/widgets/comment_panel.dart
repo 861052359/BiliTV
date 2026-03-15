@@ -343,7 +343,6 @@ class _CommentPanelState extends State<CommentPanel> {
       ),
     );
   }
-}
 
   Widget _buildLoading() {
     return const Center(
