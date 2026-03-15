@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../services/bilibili_api.dart';
 
 class CommentPanel extends StatefulWidget {
   final int oid;
   final String title;
+  final VoidCallback? onClose;
 
   const CommentPanel({
     super.key,
     required this.oid,
     required this.title,
+    this.onClose,
   });
 
   @override
@@ -23,18 +26,64 @@ class _CommentPanelState extends State<CommentPanel> {
   bool _hasMore = true;
   String? _error;
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _focusNode = FocusNode();
+  int _focusedIndex = -1;
 
   @override
   void initState() {
     super.initState();
     _loadComments();
     _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusNode.requestFocus();
+    });
   }
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  KeyEventResult _handleKeyEvent(KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+    if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+      _focusedIndex = (_focusedIndex + 1).clamp(0, _comments.length - 1);
+      _scrollToFocusedItem();
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+      _focusedIndex = (_focusedIndex - 1).clamp(0, _comments.length - 1);
+      _scrollToFocusedItem();
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+      widget.onClose?.call();
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.back || 
+        event.logicalKey == LogicalKeyboardKey.escape ||
+        event.logicalKey == LogicalKeyboardKey.goBack) {
+      widget.onClose?.call();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  void _scrollToFocusedItem() {
+    if (_focusedIndex >= 0 && _focusedIndex < _comments.length) {
+      final itemHeight = 120.0;
+      final targetOffset = _focusedIndex * itemHeight - 200;
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          targetOffset.clamp(0, _scrollController.position.maxScrollExtent),
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOut,
+        );
+      }
+    }
   }
 
   void _onScroll() {
@@ -126,35 +175,38 @@ class _CommentPanelState extends State<CommentPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFF1E1E1E),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2D2D2D),
-              border: Border(
-                bottom: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.1),
-                ),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '评论',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+    return Focus(
+      focusNode: _focusNode,
+      onKeyEvent: (node, event) => _handleKeyEvent(event),
+      child: Container(
+        color: const Color(0xFF1E1E1E),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2D2D2D),
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.1),
                   ),
                 ),
-                IconButton(
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '评论',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
                   icon: const Icon(Icons.close, color: Colors.white70),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => widget.onClose?.call(),
                 ),
               ],
             ),
@@ -219,7 +271,7 @@ class _CommentPanelState extends State<CommentPanel> {
         if (index == _comments.length) {
           return _buildLoadMoreIndicator();
         }
-        return _buildCommentItem(_comments[index]);
+        return _buildCommentItem(_comments[index], index);
       },
     );
   }
@@ -248,18 +300,24 @@ class _CommentPanelState extends State<CommentPanel> {
     );
   }
 
-  Widget _buildCommentItem(dynamic comment) {
+  Widget _buildCommentItem(dynamic comment, int index) {
     final member = comment['member'] as Map<String, dynamic>? ?? {};
     final content = comment['content'] as Map<String, dynamic>? ?? {};
     final rcount = comment['rcount'] as int? ?? 0;
     final rcountText = rcount > 0 ? ' $rcount 条回复' : '';
+    final isFocused = _focusedIndex == index;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
+        color: isFocused 
+            ? const Color(0xFFfb7299).withValues(alpha: 0.3)
+            : const Color(0xFF2D2D2D),
         borderRadius: BorderRadius.circular(8),
+        border: isFocused 
+            ? Border.all(color: const Color(0xFFfb7299), width: 2)
+            : null,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

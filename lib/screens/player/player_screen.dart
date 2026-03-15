@@ -357,6 +357,29 @@ class _PlayerScreenState extends State<PlayerScreen>
                   },
                 ),
 
+              // 评论面板
+              if (showCommentPanel)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  width: 450,
+                  child: Container(
+                    color: const Color(0xFF1E1E1E),
+                    child: CommentPanel(
+                      oid: aid ?? 0,
+                      title: getDisplayVideo().title,
+                      onClose: () {
+                        setState(() {
+                          showCommentPanel = false;
+                          showControls = true;
+                        });
+                        startHideTimer();
+                      },
+                    ),
+                  ),
+                ),
+
               // 插件跳过按钮
               _buildSkipButton(),
             ],

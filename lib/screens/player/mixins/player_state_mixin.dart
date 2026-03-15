@@ -77,6 +77,7 @@ mixin PlayerStateMixin on State<PlayerScreen> {
   // 新面板
   bool showUpPanel = false;
   bool showRelatedPanel = false;
+  bool showCommentPanel = false;
   bool showActionButtons = false;
 
   // 进度条聚焦模式
