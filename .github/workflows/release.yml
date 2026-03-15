@@ -39,11 +39,11 @@ jobs:
       - name: Rename armv7a APK
         run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/app-armeabi-v7a.apk
 
-      - name: Build APK (arm64-v8a)
-        run: flutter build apk --release --target-platform android-arm64
+      # - name: Build APK (arm64-v8a)
+      #   run: flutter build apk --release --target-platform android-arm64
 
-      - name: Rename arm64 APK
-        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/app-arm64-v8a.apk
+      # - name: Rename arm64 APK
+      #   run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/app-arm64-v8a.apk
 
       - name: List outputs
         run: ls -la build/app/outputs/flutter-apk/
@@ -51,9 +51,7 @@ jobs:
       - name: Upload APKs
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            build/app/outputs/flutter-apk/app-armeabi-v7a.apk
-            build/app/outputs/flutter-apk/app-arm64-v8a.apk
+          files: build/app/outputs/flutter-apk/app-armeabi-v7a.apk
           draft: true
           generate_release_notes: true
         env:

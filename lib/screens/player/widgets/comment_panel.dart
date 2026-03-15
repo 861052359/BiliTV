@@ -556,10 +556,6 @@ class _CommentPanelState extends State<CommentPanel> {
                           fontSize: 12,
                           fontWeight: isFocused ? FontWeight.bold : FontWeight.normal,
                         ),
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.4),
-                          fontSize: 12,
-                        ),
                       ),
                     ],
                   ),
