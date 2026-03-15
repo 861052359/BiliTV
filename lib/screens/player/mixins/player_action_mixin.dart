@@ -13,6 +13,7 @@ import '../../../services/local_server.dart';
 import '../../../services/api/videoshot_api.dart';
 import '../widgets/settings_panel.dart';
 import '../player_screen.dart';
+import '../../../utils/navigation_utils.dart';
 import '../widgets/quality_picker_sheet.dart';
 import 'player_state_mixin.dart';
 import '../../../core/plugin/plugin_manager.dart';
@@ -626,8 +627,9 @@ mixin PlayerActionMixin on PlayerStateMixin {
       );
       // 导航到新视频
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => PlayerScreen(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              PlayerScreen(
             video: models.Video(
               bvid: nextVideo['bvid'] ?? '',
               title: nextVideo['title'] ?? '',
@@ -639,6 +641,11 @@ mixin PlayerActionMixin on PlayerStateMixin {
               view: nextVideo['stat']?['view'] ?? 0,
             ),
           ),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return child;
+          },
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
         ),
       );
     }

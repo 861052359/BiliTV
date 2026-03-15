@@ -18,6 +18,7 @@ import 'widgets/mini_progress_bar.dart';
 import 'widgets/seek_preview_thumbnail.dart';
 import 'widgets/comment_panel.dart';
 import '../../widgets/time_display.dart';
+import '../../utils/navigation_utils.dart';
 import 'mixins/player_state_mixin.dart';
 import 'mixins/player_action_mixin.dart';
 import 'mixins/player_event_mixin.dart';
@@ -322,8 +323,15 @@ class _PlayerScreenState extends State<PlayerScreen>
                   onVideoSelect: (video) {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => PlayerScreen(video: video),
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) =>
+                            PlayerScreen(video: video),
+                        transitionsBuilder:
+                            (context, animation, secondaryAnimation, child) {
+                          return child;
+                        },
+                        transitionDuration: Duration.zero,
+                        reverseTransitionDuration: Duration.zero,
                       ),
                     );
                   },
@@ -343,8 +351,15 @@ class _PlayerScreenState extends State<PlayerScreen>
                   onVideoSelect: (video) {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => PlayerScreen(video: video),
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) =>
+                            PlayerScreen(video: video),
+                        transitionsBuilder:
+                            (context, animation, secondaryAnimation, child) {
+                          return child;
+                        },
+                        transitionDuration: Duration.zero,
+                        reverseTransitionDuration: Duration.zero,
                       ),
                     );
                   },
