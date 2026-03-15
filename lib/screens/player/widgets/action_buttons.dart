@@ -4,7 +4,6 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../services/bilibili_api.dart';
 import '../../../models/video.dart';
-import 'comment_panel.dart';
 
 /// 点赞/投币/收藏 按钮组件
 class ActionButtons extends StatefulWidget {
@@ -145,12 +144,12 @@ class _ActionButtonsState extends State<ActionButtons> {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
 
     if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-      setState(() => _focusedIndex = (_focusedIndex - 1).clamp(0, 3));
+      setState(() => _focusedIndex = (_focusedIndex - 1).clamp(0, 2));
       widget.onUserInteraction?.call();
       return KeyEventResult.handled;
     }
     if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-      setState(() => _focusedIndex = (_focusedIndex + 1).clamp(0, 3));
+      setState(() => _focusedIndex = (_focusedIndex + 1).clamp(0, 2));
       widget.onUserInteraction?.call();
       return KeyEventResult.handled;
     }
@@ -170,36 +169,11 @@ class _ActionButtonsState extends State<ActionButtons> {
         case 2:
           _onFavorite();
           break;
-        case 3:
-          _showCommentPanel();
-          break;
       }
       return KeyEventResult.handled;
     }
 
     return KeyEventResult.ignored;
-  }
-
-  void _showCommentPanel() {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(40),
-        child: Container(
-          width: 800,
-          height: 600,
-          decoration: BoxDecoration(
-            color: const Color(0xFF1E1E1E),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: CommentPanel(
-            oid: widget.aid,
-            title: widget.video.title,
-          ),
-        ),
-      ),
-    );
   }
 
   @override
@@ -236,12 +210,6 @@ class _ActionButtonsState extends State<ActionButtons> {
               svgPath: 'assets/icons/favorite.svg',
               label: _isFavorited ? '已收藏' : '收藏',
               isActive: _isFavorited,
-            ),
-            const SizedBox(width: 24),
-            _buildButton(
-              index: 3,
-              svgPath: 'assets/icons/comment.svg',
-              label: '评论',
             ),
           ],
         ),
