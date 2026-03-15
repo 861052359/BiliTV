@@ -208,17 +208,18 @@ class _CommentPanelState extends State<CommentPanel> {
                     icon: const Icon(Icons.close, color: Colors.white70),
                     onPressed: () => widget.onClose?.call(),
                   ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Expanded(
-            child: _error != null
-                ? _buildError()
-                : _comments.isEmpty && _isLoading
-                    ? _buildLoading()
-                    : _buildCommentList(),
-          ),
-        ],
+            Expanded(
+              child: _error != null
+                  ? _buildError()
+                  : _comments.isEmpty && _isLoading
+                      ? _buildLoading()
+                      : _buildCommentList(),
+            ),
+          ],
+        ),
       ),
     );
   }
