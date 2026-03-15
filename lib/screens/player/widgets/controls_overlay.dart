@@ -13,6 +13,7 @@ class ControlsOverlay extends StatelessWidget {
   final VoidCallback onPlayPause;
   final VoidCallback onSettings;
   final VoidCallback onEpisodes;
+  final VoidCallback onComment;
   final bool isDanmakuEnabled;
   final VoidCallback onToggleDanmaku;
   final String currentQuality;
