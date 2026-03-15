@@ -16,6 +16,7 @@ import 'widgets/up_panel.dart';
 import 'widgets/related_panel.dart';
 import 'widgets/mini_progress_bar.dart';
 import 'widgets/seek_preview_thumbnail.dart';
+import 'widgets/comment_panel.dart';
 import '../../widgets/time_display.dart';
 import 'mixins/player_state_mixin.dart';
 import 'mixins/player_action_mixin.dart';
@@ -201,6 +202,29 @@ class _PlayerScreenState extends State<PlayerScreen>
                         showEpisodePanel = true;
                         hideTimer?.cancel();
                       });
+                    },
+                    onComment: () {
+                      if (aid != null) {
+                        showDialog(
+                          context: context,
+                          builder: (context) => Dialog(
+                            backgroundColor: Colors.transparent,
+                            insetPadding: const EdgeInsets.all(40),
+                            child: Container(
+                              width: 800,
+                              height: 600,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1E1E1E),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: CommentPanel(
+                                oid: aid!,
+                                title: getDisplayVideo().title,
+                              ),
+                            ),
+                          ),
+                        );
+                      }
                     },
                     isDanmakuEnabled: danmakuEnabled,
                     onToggleDanmaku: toggleDanmaku,

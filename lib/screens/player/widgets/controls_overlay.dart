@@ -31,6 +31,7 @@ class ControlsOverlay extends StatelessWidget {
     required this.onPlayPause,
     required this.onSettings,
     required this.onEpisodes,
+    required this.onComment,
     required this.isDanmakuEnabled,
     required this.onToggleDanmaku,
     required this.currentQuality,
@@ -225,6 +226,13 @@ class ControlsOverlay extends StatelessWidget {
                       index: 4,
                       icon: Icons.thumb_up_outlined,
                       onTap: () {},
+                    ),
+                    const SizedBox(width: 24),
+                    // 评论
+                    _buildControlButton(
+                      index: 5,
+                      icon: Icons.comment_outlined,
+                      onTap: onComment,
                     ),
                     const Spacer(),
                     // 在线人数 (纯文字)
