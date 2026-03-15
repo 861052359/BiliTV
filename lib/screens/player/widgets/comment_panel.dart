@@ -30,6 +30,9 @@ class _CommentPanelState extends State<CommentPanel> {
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
   int _focusedIndex = -1;
+  dynamic _selectedComment;
+  List<dynamic> _replies = [];
+  bool _isLoadingReplies = false;
 
   @override
   void initState() {
@@ -78,7 +81,14 @@ class _CommentPanelState extends State<CommentPanel> {
       return KeyEventResult.handled;
     }
     if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-      widget.onClose?.call();
+      if (_selectedComment != null) {
+        setState(() {
+          _selectedComment = null;
+          _replies = [];
+        });
+      } else {
+        widget.onClose?.call();
+      }
       return KeyEventResult.handled;
     }
     if (event.logicalKey == LogicalKeyboardKey.escape ||
@@ -91,148 +101,38 @@ class _CommentPanelState extends State<CommentPanel> {
   }
 
   void _showReplies(dynamic comment) async {
+    setState(() {
+      _selectedComment = comment;
+      _replies = [];
+      _isLoadingReplies = true;
+    });
+
     final rpid = comment['rpid'];
     final oid = widget.oid;
-    
+
     try {
-      final url = 'https://api.bilibili.com/x/v2/reply/reply?oid=$oid&type=1&root=$rpid&pn=1&ps=10';
+      final url =
+          'https://api.bilibili.com/x/v2/reply/reply?oid=$oid&type=1&root=$rpid&pn=1&ps=10';
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
         if (json['code'] == 0 && json['data'] != null) {
           final replies = json['data']['replies'] as List? ?? [];
-          if (replies.isNotEmpty && mounted) {
-            _showRepliesDialog(comment, replies);
+          if (mounted) {
+            setState(() {
+              _replies = replies;
+              _isLoadingReplies = false;
+            });
           }
         }
       }
     } catch (e) {
-      // ignore
+      if (mounted) {
+        setState(() {
+          _isLoadingReplies = false;
+        });
+      }
     }
-  }
-
-  void _showRepliesDialog(dynamic comment, List replies) {
-    final member = comment['member'] as Map<String, dynamic>? ?? {};
-    final content = comment['content'] as Map<String, dynamic>? ?? {};
-    
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        child: Container(
-          width: 500,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: CachedNetworkImage(
-                      imageUrl: member['avatar'] ?? '',
-                      width: 40,
-                      height: 40,
-                      errorWidget: (_, __, ___) => Container(
-                        width: 40,
-                        height: 40,
-                        color: Colors.grey[800],
-                        child: const Icon(Icons.person, color: Colors.white54),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      member['uname'] ?? '',
-                      style: const TextStyle(
-                        color: Color(0xFFfb7299),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white70),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                content['message'] ?? '',
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-              ),
-              const SizedBox(height: 16),
-              const Divider(color: Colors.white24),
-              const SizedBox(height: 8),
-              const Text(
-                '全部回复',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: replies.length,
-                  itemBuilder: (context, index) {
-                    final reply = replies[index];
-                    final replyMember = reply['member'] as Map<String, dynamic>? ?? {};
-                    final replyContent = reply['content'] as Map<String, dynamic>? ?? {};
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(15),
-                            child: CachedNetworkImage(
-                              imageUrl: replyMember['avatar'] ?? '',
-                              width: 30,
-                              height: 30,
-                              errorWidget: (_, __, ___) => Container(
-                                width: 30,
-                                height: 30,
-                                color: Colors.grey[800],
-                                child: const Icon(Icons.person, color: Colors.white54, size: 18),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  replyMember['uname'] ?? '',
-                                  style: const TextStyle(
-                                    color: Color(0xFFfb7299),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  replyContent['message'] ?? '',
-                                  style: const TextStyle(color: Colors.white, fontSize: 13),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   void _scrollToFocusedItem() {
@@ -343,43 +243,142 @@ class _CommentPanelState extends State<CommentPanel> {
       onKeyEvent: (node, event) => _handleKeyEvent(event),
       child: Container(
         color: const Color(0xFF1E1E1E),
-        child: Column(
+        child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2D2D2D),
-                border: Border(
-                  bottom: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.1),
-                  ),
-                ),
-              ),
-              child: Row(
+            Expanded(
+              child: Column(
                 children: [
-                  Expanded(
-                    child: Text(
-                      '评论',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2D2D2D),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.1),
+                        ),
                       ),
                     ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _selectedComment != null ? '回复' : '评论',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        if (_selectedComment != null)
+                          IconButton(
+                            icon: const Icon(Icons.arrow_back, color: Colors.white70),
+                            onPressed: () {
+                              setState(() {
+                                _selectedComment = null;
+                                _replies = [];
+                              });
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: _error != null
+                        ? _buildError()
+                        : _comments.isEmpty && _isLoading
+                            ? _buildLoading()
+                            : _buildCommentList(),
                   ),
                 ],
               ),
             ),
-            Expanded(
-              child: _error != null
-                  ? _buildError()
-                  : _comments.isEmpty && _isLoading
-                      ? _buildLoading()
-                      : _buildCommentList(),
-            ),
+            if (_selectedComment != null)
+              Container(
+                width: 350,
+                color: const Color(0xFF252525),
+                child: _buildRepliesPanel(),
+              ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildRepliesPanel() {
+    if (_isLoadingReplies) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFFfb7299),
+        ),
+      );
+    }
+
+    if (_replies.isEmpty) {
+      return Center(
+        child: Text(
+          '暂无回复',
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(12),
+      itemCount: _replies.length,
+      itemBuilder: (context, index) {
+        final reply = _replies[index];
+        final replyMember = reply['member'] as Map<String, dynamic>? ?? {};
+        final replyContent = reply['content'] as Map<String, dynamic>? ?? {};
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2D2D2D),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: CachedNetworkImage(
+                  imageUrl: replyMember['avatar'] ?? '',
+                  width: 30,
+                  height: 30,
+                  errorWidget: (_, __, ___) => Container(
+                    width: 30,
+                    height: 30,
+                    color: Colors.grey[800],
+                    child: const Icon(Icons.person, color: Colors.white54, size: 18),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      replyMember['uname'] ?? '',
+                      style: const TextStyle(
+                        color: Color(0xFFfb7299),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      replyContent['message'] ?? '',
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
