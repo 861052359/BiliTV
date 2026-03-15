@@ -8,6 +8,7 @@ import '../../services/auth_service.dart';
 import '../../widgets/history_video_card.dart';
 import '../../widgets/time_display.dart';
 import '../player/player_screen.dart';
+import '../../utils/navigation_utils.dart';
 
 /// 观看历史 Tab
 class HistoryTab extends StatefulWidget {
@@ -136,9 +137,7 @@ class HistoryTabState extends State<HistoryTab> {
   }
 
   void _onVideoTap(Video video) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => PlayerScreen(video: video)));
+    PageRouteUtils.pushPlayer(context, PlayerScreen(video: video));
   }
 
   @override

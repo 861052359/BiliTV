@@ -8,6 +8,7 @@ import '../../services/auth_service.dart';
 import '../../widgets/tv_video_card.dart';
 import '../../widgets/time_display.dart';
 import '../player/player_screen.dart';
+import '../../utils/navigation_utils.dart';
 
 /// 动态 Tab
 class DynamicTab extends StatefulWidget {
@@ -128,9 +129,7 @@ class DynamicTabState extends State<DynamicTab> {
   }
 
   void _onVideoTap(Video video) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => PlayerScreen(video: video)));
+    PageRouteUtils.pushPlayer(context, PlayerScreen(video: video));
   }
 
   @override

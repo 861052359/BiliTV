@@ -11,6 +11,7 @@ import '../../widgets/time_display.dart';
 import '../../core/plugin/plugin_manager.dart';
 import '../../core/plugin/plugin_types.dart';
 import '../player/player_screen.dart';
+import '../../utils/navigation_utils.dart';
 
 class HomeTab extends StatefulWidget {
   final FocusNode? sidebarFocusNode;
@@ -209,9 +210,7 @@ class HomeTabState extends State<HomeTab> {
   }
 
   void _onVideoTap(Video video) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => PlayerScreen(video: video)));
+    PageRouteUtils.pushPlayer(context, PlayerScreen(video: video));
   }
 
   @override
