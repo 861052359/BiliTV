@@ -91,6 +91,7 @@ mixin PlayerEventMixin on PlayerActionMixin {
         textColor: Colors.white,
       );
     } else {
+      videoController?.pause();
       Navigator.of(context).pop();
     }
   }
