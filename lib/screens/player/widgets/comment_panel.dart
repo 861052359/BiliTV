@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../services/bilibili_api.dart';
+import '../../../services/bilibili_api.dart';
 
 class CommentPanel extends StatefulWidget {
   final int oid;
