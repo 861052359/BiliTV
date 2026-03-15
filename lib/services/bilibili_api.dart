@@ -131,6 +131,14 @@ class BilibiliApi {
     required int cid,
   }) => PlaybackApi.getOnlineCount(aid: aid, cid: cid);
 
+  /// 获取视频评论
+  static Future<Map<String, dynamic>> getComments({
+    required int oid,
+    int pn = 1,
+    int type = 1,
+    int sort = 2,
+  }) => PlaybackApi.getComments(oid: oid, pn: pn, type: type, sort: sort);
+
   /// 获取视频快照(雪碧图)数据
   static Future<VideoshotData?> getVideoshot({
     required String bvid,

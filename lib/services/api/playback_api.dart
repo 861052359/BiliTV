@@ -380,4 +380,39 @@ class PlaybackApi {
     }
     return null;
   }
+
+  /// 获取视频评论
+  /// [oid] 视频的aid
+  /// [pn] 页码
+  /// [type] 类型，1-视频
+  static Future<Map<String, dynamic>> getComments({
+    required int oid,
+    int pn = 1,
+    int type = 1,
+    int sort = 2, // 2-按时间排序，0-按点赞数排序
+  }) async {
+    try {
+      final url =
+          'https://api.bilibili.com/x/v2/reply?type=$type&oid=$oid&pn=$pn&sort=$sort';
+      final response = await http.get(
+        Uri.parse(url),
+        headers: BaseApi.getHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        if (json['code'] == 0 && json['data'] != null) {
+          return {
+            'code': 0,
+            'data': json['data'],
+            'page': json['data']['page'] ?? {'num': pn, 'size': 20},
+          };
+        }
+        return {'code': json['code'] ?? -1, 'message': json['message'] ?? '获取评论失败'};
+      }
+    } catch (e) {
+      return {'code': -1, 'message': e.toString()};
+    }
+    return {'code': -1, 'message': '网络错误'};
+  }
 }
