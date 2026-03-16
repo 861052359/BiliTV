@@ -21,9 +21,6 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Build APK (armeabi-v7a)
-        run: flutter build apk --release --target-platform android-arm
-
       # - name: Build APK (armeabi-v7a)
       #   run: flutter build apk --release --target-platform android-arm
 
