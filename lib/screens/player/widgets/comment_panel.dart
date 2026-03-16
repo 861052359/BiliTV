@@ -533,7 +533,7 @@ class _CommentPanelState extends State<CommentPanel> {
     final isFocused = _focusedIndex == index;
     final isExpanded = _expandedCommentIndex == index;
 
-    return GestureDetector(
+    return InkWell(
       onTap: () {
         setState(() {
           _focusedIndex = index;
