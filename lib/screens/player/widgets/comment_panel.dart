@@ -563,7 +563,8 @@ class _CommentPanelState extends State<CommentPanel> {
                   ? Border.all(color: const Color(0xFFfb7299).withValues(alpha: 0.5), width: 1)
                   : null,
         ),
-        child: Row(
+      ),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
