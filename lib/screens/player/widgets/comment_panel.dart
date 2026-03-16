@@ -550,20 +550,20 @@ class _CommentPanelState extends State<CommentPanel> {
         }
       },
       child: Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isFocused 
-            ? const Color(0xFFfb7299).withValues(alpha: 0.3)
-            : const Color(0xFF2D2D2D),
-        borderRadius: BorderRadius.circular(8),
-        border: isFocused 
-            ? Border.all(color: const Color(0xFFfb7299), width: 2)
-            : isExpanded
-                ? Border.all(color: const Color(0xFFfb7299).withValues(alpha: 0.5), width: 1)
-                : null,
-      ),
-      child: Row(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isFocused 
+              ? const Color(0xFFfb7299).withValues(alpha: 0.3)
+              : const Color(0xFF2D2D2D),
+          borderRadius: BorderRadius.circular(8),
+          border: isFocused 
+              ? Border.all(color: const Color(0xFFfb7299), width: 2)
+              : isExpanded
+                  ? Border.all(color: const Color(0xFFfb7299).withValues(alpha: 0.5), width: 1)
+                  : null,
+        ),
+        child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
