@@ -670,6 +670,5 @@ class _CommentPanelState extends State<CommentPanel> {
         ],
       ),
     );
-    );
   }
 }
