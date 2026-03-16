@@ -533,7 +533,23 @@ class _CommentPanelState extends State<CommentPanel> {
     final isFocused = _focusedIndex == index;
     final isExpanded = _expandedCommentIndex == index;
 
-    return Container(
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _focusedIndex = index;
+        });
+        if (rcount > 0) {
+          if (_expandedCommentIndex == index) {
+            setState(() {
+              _expandedCommentIndex = null;
+              _expandedReplies = [];
+            });
+          } else {
+            _showReplies(comment, index);
+          }
+        }
+      },
+      child: Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -653,6 +669,7 @@ class _CommentPanelState extends State<CommentPanel> {
           ),
         ],
       ),
+    );
     );
   }
 }
